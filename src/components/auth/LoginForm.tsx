@@ -164,6 +164,7 @@ const LoginForm = () => {
           variant="contained"
           size="large"
           loading={loading}
+          loadingText="Logging in..."
           disabled={loading}
           sx={{
             backgroundColor: colors.primary.main,

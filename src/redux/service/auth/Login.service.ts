@@ -1,7 +1,7 @@
 import apiClient from "../../apiClient";
 import axios from "axios";
 
-// Define the payload and response types for Login
+// Payload interface for login
 export interface LoginPayload {
   userId: string;
   password?: string;
@@ -10,14 +10,20 @@ export interface LoginPayload {
 export interface LoginResponse {
   token: string;
   user?: {
+    id: string;
     userId: string;
     name?: string;
     role?: string;
-    // Add other user fields if returned by API
+    subrole?: string | null;
+    phone?: string;
+    joiningDate?: string;
+    endDate?: string;
+    lastActive?: string;
+    payment?: boolean;
   };
   message: string;
 }
-
+// Error message
 const extractServerMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
     return error.response?.data?.message ?? error.message ?? "Login failed";
@@ -28,14 +34,12 @@ const extractServerMessage = (error: unknown): string => {
   return "Login failed";
 };
 
+// Login function
 export const loginUser = async (
   payload: LoginPayload,
 ): Promise<LoginResponse> => {
   try {
     const response = await apiClient.post("/auth/login", payload);
-
-    // The API returns: { status, message, data: { token, user } }
-    // We need to extract from the nested data object
     const { data, message } = response.data;
 
     if (!data?.token) {

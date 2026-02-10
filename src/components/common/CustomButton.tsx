@@ -1,17 +1,18 @@
 import type { FC, ReactNode } from "react";
-import { Button as MuiButton, CircularProgress } from "@mui/material";
+import { Button as MuiButton } from "@mui/material";
 import type { ButtonProps } from "@mui/material";
 
 interface CustomButtonProps extends ButtonProps {
   label?: string;
   loading?: boolean;
+  loadingText?: string;
   children?: ReactNode;
-
 }
 
 const CustomButton: FC<CustomButtonProps> = ({
   label,
   loading = false,
+  loadingText,
   disabled,
   children,
   sx,
@@ -38,7 +39,7 @@ const CustomButton: FC<CustomButtonProps> = ({
         ...sx,
       }}
     >
-      {loading ? <CircularProgress size={24} color="inherit" /> : content}
+      {loading ? loadingText || "Loading..." : content}
     </MuiButton>
   );
 };

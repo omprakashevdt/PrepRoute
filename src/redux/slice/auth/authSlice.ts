@@ -16,11 +16,13 @@ interface AuthState {
 }
 
 // Initial state
-// Try to rehydrate token from localStorage on app load
 const initialToken = localStorage.getItem("token");
+const initialUser = localStorage.getItem("user")
+  ? JSON.parse(localStorage.getItem("user") as string)
+  : null;
 
 const initialState: AuthState = {
-  user: null, // You might decoding the token or fetch user profile separately
+  user: initialUser,
   token: initialToken,
   isAuthenticated: !!initialToken,
   loading: false,
@@ -36,7 +38,6 @@ export const login = createAsyncThunk<
 >("auth/login", async (payload, { rejectWithValue }) => {
   try {
     const response = await loginUser(payload);
-    // Store token in localStorage upon success
     if (response.token) {
       localStorage.setItem("token", response.token);
     }
@@ -56,6 +57,7 @@ const authSlice = createSlice({
   reducers: {
     logout: (state) => {
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
@@ -83,6 +85,7 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.token = action.payload.token;
         state.user = action.payload.user || null;
+        localStorage.setItem("user", JSON.stringify(state.user));
         state.success = true;
         state.error = null;
       })
