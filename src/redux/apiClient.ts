@@ -2,15 +2,13 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 const apiClient = axios.create({
-
-
-baseURL: import.meta.env.VITE_API_URL,
-withCredentials: true,
+  baseURL: import.meta.env.VITE_URL,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
   },
 });
-
 
 let lastErrorMessage = "";
 let lastErrorTime = 0;
