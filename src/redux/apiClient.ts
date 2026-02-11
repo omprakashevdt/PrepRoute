@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 const apiClient = axios.create({
   baseURL: import.meta.env.DEV
     ? import.meta.env.VITE_URL
-    : import.meta.env.VITE_API_URL,
+    : "https://admin-moderator-backend-production.up.railway.app/api",
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
