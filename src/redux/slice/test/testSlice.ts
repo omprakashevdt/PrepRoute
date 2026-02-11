@@ -9,6 +9,7 @@ import {
   type BulkCreateQuestionsPayload,
   type UpdateTestPayload,
   type GetAllTestsParams,
+  type Test,
 } from "../../service/test/Test.service";
 
 interface TestState {
@@ -17,8 +18,8 @@ interface TestState {
   success: boolean;
   testCreated: boolean;
   createdTestId: string | null;
-  currentTest: any | null;
-  tests: any[];
+  currentTest: Test | null;
+  tests: Test[];
 }
 
 const initialState: TestState = {
@@ -131,12 +132,12 @@ const testSlice = createSlice({
         state.success = false;
         state.testCreated = false;
       })
-      .addCase(createNewTest.fulfilled, (state, action: any) => {
+      .addCase(createNewTest.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
         state.testCreated = true;
         state.error = null;
-        // Assuming the response structure is { success: true, data: { id: "..." } } based on prompt
+    
         state.createdTestId = action.payload?.data?.id || null;
       })
       .addCase(createNewTest.rejected, (state, action) => {
@@ -150,7 +151,7 @@ const testSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchAllTests.fulfilled, (state, action: any) => {
+      .addCase(fetchAllTests.fulfilled, (state, action) => {
         state.loading = false;
         state.tests = action.payload?.data || [];
         state.error = null;
@@ -164,7 +165,7 @@ const testSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchTestById.fulfilled, (state, action: any) => {
+      .addCase(fetchTestById.fulfilled, (state, action) => {
         state.loading = false;
         state.currentTest = action.payload?.data || null;
         state.error = null;

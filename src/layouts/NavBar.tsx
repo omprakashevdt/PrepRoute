@@ -20,8 +20,8 @@ import { useState } from "react";
 const logoImg = "/preproute lofo.png";
 
 interface NavbarProps {
-  onMenuClick: () => void; // mobile drawer
-  onCollapseToggle: () => void; // desktop collapse
+  onMenuClick: () => void;
+  onCollapseToggle: () => void; 
 }
 
 const Navbar = ({ onMenuClick, onCollapseToggle }: NavbarProps) => {
@@ -56,7 +56,7 @@ const Navbar = ({ onMenuClick, onCollapseToggle }: NavbarProps) => {
       }}
     >
       <Toolbar>
-        {/*  DESKTOP collapse button */}
+
         <IconButton
           onClick={onCollapseToggle}
           sx={{ display: { xs: "none", md: "inline-flex" }, mr: 1 }}
@@ -64,7 +64,7 @@ const Navbar = ({ onMenuClick, onCollapseToggle }: NavbarProps) => {
           <MenuIcon />
         </IconButton>
 
-        {/*  MOBILE drawer button */}
+
         <IconButton
           onClick={onMenuClick}
           sx={{ display: { xs: "inline-flex", md: "none" }, mr: 1 }}

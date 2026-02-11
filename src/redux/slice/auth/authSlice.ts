@@ -5,7 +5,7 @@ import type {
   LoginResponse,
 } from "../../service/auth/Login.service";
 
-// Define the initial state interface
+
 interface AuthState {
   user: LoginResponse["user"] | null;
   token: string | null;

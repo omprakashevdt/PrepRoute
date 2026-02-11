@@ -11,13 +11,14 @@ import {
   FormControlLabel,
   Tabs,
   Tab,
-  CircularProgress,
 } from "@mui/material";
 import { toast } from "react-toastify";
 import TestHeaderDetails from "../components/test/TestHeaderDetails";
 import { fetchTestById, updateTestAsync } from "../redux/slice/test/testSlice";
 import { useAppDispatch, useAppSelector } from "../redux/hooks";
+import type { UpdateTestPayload } from "../redux/service/test/Test.service";
 import CustomButton from "../components/common/CustomButton";
+import Loader from "../components/common/Loader";
 import { colors } from "../theme/colors";
 
 const TestPublish = () => {
@@ -26,10 +27,9 @@ const TestPublish = () => {
   const dispatch = useAppDispatch();
   const { currentTest, loading } = useAppSelector((state) => state.test);
 
-  const [tabValue, setTabValue] = useState(0); // 0: Publish Now, 1: Schedule, 2: Save Bank
+  const [tabValue, setTabValue] = useState(0);
   const [liveDuration, setLiveDuration] = useState("always");
 
-  // Date states
   const [publishDate, setPublishDate] = useState("");
   const [publishTime, setPublishTime] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -44,13 +44,7 @@ const TestPublish = () => {
   const handlePublish = async () => {
     if (!testId) return;
 
-    // Validate if scheduling
-    if (tabValue === 1 && (!publishDate || !publishTime)) {
-      toast.error("Please select publish date and time");
-      return;
-    }
-
-    const payload: any = {
+    const payload: UpdateTestPayload = {
       status: tabValue === 1 ? "scheduled" : "live",
       total_questions: currentTest?.total_questions || 0,
     };
@@ -63,7 +57,6 @@ const TestPublish = () => {
       payload.expiry_date = `${endDate}T${endTime}`;
     }
 
-    // Call update API
     const result = await dispatch(updateTestAsync({ id: testId, payload }));
 
     if (updateTestAsync.fulfilled.match(result)) {
@@ -78,13 +71,12 @@ const TestPublish = () => {
     }
   };
 
-  if (loading && !currentTest) {
-    return <CircularProgress sx={{ display: "block", mx: "auto", mt: 4 }} />;
+  if (loading) {
+    return <Loader />;
   }
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: "100%", overflowX: "hidden" }}>
-      {/* Breadcrumb / Title */}
       <Typography variant="body2" color="text.secondary" mb={2}>
         Test Creation /{" "}
         <Typography component="span" variant="body2" color="primary">
@@ -115,7 +107,6 @@ const TestPublish = () => {
         onEdit={() => navigate(`/create-test/${testId}/edit`)}
       />
 
-      {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
         <Tabs
           value={tabValue}
@@ -131,11 +122,9 @@ const TestPublish = () => {
         >
           <Tab label="Publish Now" />
           <Tab label="Schedule Publish" />
-          <Tab label="Save to Question Bank" />
         </Tabs>
       </Box>
 
-      {/* Scheduling Inputs */}
       {tabValue === 1 && (
         <Box mb={4}>
           <Typography variant="h6" fontWeight="bold" mb={2}>
@@ -164,7 +153,6 @@ const TestPublish = () => {
         </Box>
       )}
 
-      {/* Live Until */}
       <Box mb={4}>
         <Typography variant="h6" fontWeight="bold" mb={2}>
           Live Until
@@ -247,7 +235,6 @@ const TestPublish = () => {
         )}
       </Box>
 
-      {/* Action Buttons */}
       <Stack
         direction={{ xs: "column", sm: "row" }}
         justifyContent="flex-end"

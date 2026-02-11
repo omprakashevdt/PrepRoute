@@ -14,7 +14,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
   placeholder,
-  height = "300px", // Jodit sets height differently
+  height = "300px",
   error = false,
 }) => {
   const editor = useRef(null);
@@ -65,8 +65,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       uploader: {
         insertImageAsBase64URI: true,
       },
-      // Apply error styling through Jodit's container if possible,
-      // but easier to wrap it
     }),
     [placeholder, height],
   );
@@ -78,7 +76,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           border: error ? "1px solid red !important" : undefined,
           borderRadius: "4px",
         },
-        // Ensure editor content area respects height
+
         "& .jodit-wysiwyg": {
           minHeight: height,
         },
@@ -88,9 +86,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         ref={editor}
         value={value}
         config={config}
-        // creating new strings on blur/change is safer for performance
         onBlur={(newContent) => onChange(newContent)}
-        // onChange={onChange} // Jodit triggers onChange frequently, onBlur is often better for forms
       />
     </Box>
   );

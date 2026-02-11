@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { FC } from "react";
 import {
   Box,
@@ -36,6 +36,7 @@ import {
 import { toast } from "react-toastify";
 import { useNavigate, useParams } from "react-router-dom";
 import CustomButton from "../components/common/CustomButton";
+import Loader from "../components/common/Loader";
 import { colors } from "../theme/colors";
 
 type FormValues = {
@@ -103,36 +104,31 @@ const CreateTest: FC = () => {
   const selectedSubject = watch("subject");
   const selectedTopics = watch("topics");
 
-  // Track if form was submitted in this session
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const isPopulating = useRef(false);
 
   useEffect(() => {
-    // Don't reset test state in edit mode
     if (!isEditMode) {
       dispatch(resetTestState());
     }
     dispatch(fetchSubjects());
-    // Reset form submission flag
     setFormSubmitted(false);
   }, [dispatch, isEditMode]);
 
-  // Fetch test data if in edit mode
   useEffect(() => {
     if (isEditMode && testId) {
       dispatch(fetchTestById(testId));
     }
   }, [dispatch, isEditMode, testId]);
 
-  // Populate form when test data is loaded in edit mode
   useEffect(() => {
     if (isEditMode && currentTest && subjects.length > 0) {
-      // Find subject ID from name
+      isPopulating.current = true;
       const subjectObj = subjects.find(
         (s) => s.name === currentTest.subject || s.id === currentTest.subject,
       );
       const subjectId = subjectObj?.id || currentTest.subject;
 
-      // Set basic fields
       setValue("name", currentTest.name || "");
       setValue(
         "type",
@@ -147,7 +143,6 @@ const CreateTest: FC = () => {
       setValue("no_of_questions", currentTest.total_questions || "");
       setValue("total_marks", currentTest.total_marks || "");
 
-      // Fetch topics for the subject, then set topics and fetch subtopics
       if (subjectId) {
         dispatch(fetchTopics(subjectId)).then((action) => {
           if (
@@ -155,14 +150,15 @@ const CreateTest: FC = () => {
             currentTest.topics &&
             Array.isArray(currentTest.topics)
           ) {
-            // Backend returns topic NAMES, but we need topic IDs for the form
             const fetchedTopics = action.payload as Topic[];
             const topicIds = currentTest.topics
-              .map((topicName) => {
+              .map((topicName: string) => {
                 const found = fetchedTopics.find((t) => t.name === topicName);
                 return found?.id;
               })
-              .filter((id): id is string => id !== undefined);
+              .filter(
+                (id: string | undefined): id is string => id !== undefined,
+              );
 
             setValue("topics", topicIds);
 
@@ -173,23 +169,32 @@ const CreateTest: FC = () => {
                   currentTest.sub_topics &&
                   Array.isArray(currentTest.sub_topics)
                 ) {
-                  // Backend returns sub-topic NAMES, but we need sub-topic IDs
                   const fetchedSubTopics = subAction.payload as SubTopic[];
                   const subTopicIds = currentTest.sub_topics
-                    .map((subTopicName) => {
+                    .map((subTopicName: string) => {
                       const found = fetchedSubTopics.find(
                         (st) => st.name === subTopicName,
                       );
                       return found?.id;
                     })
-                    .filter((id): id is string => id !== undefined);
+                    .filter(
+                      (id: string | undefined): id is string =>
+                        id !== undefined,
+                    );
 
                   setValue("sub_topics", subTopicIds);
                 }
+                isPopulating.current = false;
               });
+            } else {
+              isPopulating.current = false;
             }
+          } else {
+            isPopulating.current = false;
           }
         });
+      } else {
+        isPopulating.current = false;
       }
     }
   }, [isEditMode, currentTest, subjects, setValue, dispatch]);
@@ -204,6 +209,7 @@ const CreateTest: FC = () => {
   }, [selectedSubject, dispatch, setValue, isEditMode]);
 
   useEffect(() => {
+    if (isPopulating.current) return;
     if (selectedTopics && selectedTopics.length > 0) {
       dispatch(fetchSubTopics(selectedTopics));
       setValue("sub_topics", []);
@@ -214,14 +220,12 @@ const CreateTest: FC = () => {
   }, [selectedTopics, dispatch, setValue]);
 
   useEffect(() => {
-    // Only process success if form was actually submitted in this session
     if (!formSubmitted) {
       return;
     }
 
     if (success && (createdTestId || isEditMode)) {
       if (isEditMode && testId) {
-        // Edit mode success
         toast.success("Test updated successfully!");
         setTimeout(() => {
           navigate(`/create-test/${testId}/publish`);
@@ -229,7 +233,6 @@ const CreateTest: FC = () => {
           setFormSubmitted(false);
         }, 1000);
       } else if (createdTestId) {
-        // Create mode success
         const message =
           submissionType === "draft"
             ? "Test draft saved!"
@@ -285,29 +288,17 @@ const CreateTest: FC = () => {
       status: submissionType === "draft" ? "draft" : "unpublished",
     };
 
-    // Mark that form was submitted in this session
     setFormSubmitted(true);
 
     if (isEditMode && testId) {
-      // Update existing test
       dispatch(updateTestAsync({ id: testId, payload: apiPayload }));
     } else {
-      // Create new test
       dispatch(createNewTest(apiPayload));
     }
   };
 
-  if (subjectsLoading && subjects.length === 0) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        height="50vh"
-      >
-        <CircularProgress />
-      </Box>
-    );
+  if ((subjectsLoading && subjects.length === 0) || testLoading) {
+    return <Loader />;
   }
 
   return (
@@ -347,8 +338,6 @@ const CreateTest: FC = () => {
       <form onSubmit={handleSubmit(onSubmit)}>
         <Paper sx={{ p: 4, borderRadius: 3 }} elevation={0}>
           <Grid container spacing={3}>
-            {/* Row 1 */}
-            {/* Subject */}
             <Grid size={{ xs: 12, md: 6 }}>
               <Typography variant="subtitle2" mb={1} fontWeight={600}>
                 Subject
@@ -387,7 +376,6 @@ const CreateTest: FC = () => {
               />
             </Grid>
 
-            {/* Name of Test */}
             <Grid size={{ xs: 12, md: 6 }}>
               <Typography variant="subtitle2" mb={1} fontWeight={600}>
                 Name of Test
@@ -413,8 +401,6 @@ const CreateTest: FC = () => {
               />
             </Grid>
 
-            {/* Row 2 */}
-            {/* Topic */}
             <Grid size={{ xs: 12, md: 6 }}>
               <Stack direction="row" spacing={1} alignItems="center" mb={1}>
                 <Typography variant="subtitle2" fontWeight={600}>
@@ -493,7 +479,6 @@ const CreateTest: FC = () => {
               />
             </Grid>
 
-            {/* Sub Topic */}
             <Grid size={{ xs: 12, md: 6 }}>
               <Stack direction="row" spacing={1} alignItems="center" mb={1}>
                 <Typography variant="subtitle2" fontWeight={600}>
@@ -583,8 +568,6 @@ const CreateTest: FC = () => {
               />
             </Grid>
 
-            {/* Row 3 */}
-            {/* Duration */}
             <Grid size={{ xs: 12, md: 6 }}>
               <Typography variant="subtitle2" mb={1} fontWeight={600}>
                 Duration (Minutes)
@@ -618,7 +601,6 @@ const CreateTest: FC = () => {
               />
             </Grid>
 
-            {/* Difficulty */}
             <Grid size={{ xs: 12, md: 6 }}>
               <Typography variant="subtitle2" mb={1} fontWeight={600}>
                 Test Difficulty Level
@@ -658,13 +640,11 @@ const CreateTest: FC = () => {
               />
             </Grid>
 
-            {/* Row 4: Marking Scheme and Stats */}
             <Grid size={{ xs: 12 }}>
               <Typography variant="subtitle2" mb={2} fontWeight={600}>
                 Marking Scheme:
               </Typography>
               <Grid container spacing={2}>
-                {/* Wrong Answer */}
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Typography
                     variant="caption"
@@ -706,7 +686,7 @@ const CreateTest: FC = () => {
                         }}
                         onChange={(e) => {
                           const val = e.target.value;
-                          // Only allow negative numbers (must start with -)
+                          
                           if (
                             val === "" ||
                             val === "-" ||
@@ -720,7 +700,6 @@ const CreateTest: FC = () => {
                   />
                 </Grid>
 
-                {/* Unattempted */}
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Typography
                     variant="caption"
@@ -759,7 +738,6 @@ const CreateTest: FC = () => {
                   />
                 </Grid>
 
-                {/* Correct Answer */}
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Typography
                     variant="caption"

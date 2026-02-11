@@ -43,11 +43,11 @@ export const fetchSubTopics = createAsyncThunk(
     try {
       if (!topicIds || topicIds.length === 0) return [];
 
-      // Make parallel requests to the correct API endpoint for each topic
+
       const promises = topicIds.map((topicId) => getSubTopicsByTopic(topicId));
       const responses = await Promise.all(promises);
 
-      // Combine all sub-topics from all responses
+     
       const allSubTopics = responses.flatMap((response) => response.data);
 
       return allSubTopics;

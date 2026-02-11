@@ -63,8 +63,6 @@ const Sidebar = ({
             PrepRoute
           </Typography>
         )}
-
-        {/* Only show collapse toggle on desktop */}
         {!isMobile && (
           <IconButton onClick={onCollapseToggle}>
             {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}

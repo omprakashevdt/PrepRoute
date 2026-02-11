@@ -16,16 +16,15 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
-  CircularProgress,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import AddIcon from "@mui/icons-material/Add";
-import ArticleIcon from "@mui/icons-material/Article"; // For Paragraph
-import TableViewIcon from "@mui/icons-material/TableView"; // For Question Bank
-import DownloadIcon from "@mui/icons-material/Download"; // For CSV
+import ArticleIcon from "@mui/icons-material/Article";
+import TableViewIcon from "@mui/icons-material/TableView";
+import DownloadIcon from "@mui/icons-material/Download";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { useAppDispatch, useAppSelector } from "../redux/hooks";
@@ -40,6 +39,7 @@ import { colors } from "../theme/colors";
 import { toast } from "react-toastify";
 import CustomButton from "../components/common/CustomButton";
 import RichTextEditor from "../components/common/RichTextEditor";
+import Loader from "../components/common/Loader";
 
 interface QuestionFormValues {
   question: string;
@@ -83,7 +83,7 @@ const AddQuestions = () => {
   const { subjects } = useAppSelector((state) => state.subject);
 
   const [questions, setQuestions] = useState<any[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(-1); // -1 means new question
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(-1);
   const [isEditMode, setIsEditMode] = useState(false);
 
   const {
@@ -99,7 +99,6 @@ const AddQuestions = () => {
 
   const selectedTopicId = watch("topic_id");
 
-  // Fetch subjects on mount to ensure we have the list for ID lookup
   useEffect(() => {
     dispatch(fetchSubjects());
   }, [dispatch]);
@@ -112,8 +111,7 @@ const AddQuestions = () => {
 
   useEffect(() => {
     if (currentTest?.subject) {
-      // Backend returns subject NAME, but API needs subject ID
-      // Find the subject ID from the subjects list
+
       const subjectObj = subjects.find(
         (s) => s.name === currentTest.subject || s.id === currentTest.subject,
       );
@@ -121,7 +119,7 @@ const AddQuestions = () => {
       if (subjectObj) {
         dispatch(fetchTopics(subjectObj.id));
       } else {
-        // If subjects not loaded yet, fetch them first
+
         dispatch(fetchSubjects());
       }
     }
@@ -134,8 +132,7 @@ const AddQuestions = () => {
   }, [selectedTopicId, dispatch]);
 
   const handleAddQuestion = (data: QuestionFormValues) => {
-    // Create question payload without topic_id and sub_topic_id
-    // (these fields don't exist in the questions table schema)
+
     const newQuestion = {
       question: data.question,
       option1: data.option1,
@@ -193,7 +190,7 @@ const AddQuestions = () => {
     if (saveSuccess) {
       toast.success("Questions saved successfully!");
       dispatch(resetTestState());
-      // Navigate to Publish/Preview page instead of dashboard
+
       navigate(`/create-test/${testId}/publish`);
     }
     if (saveError) {
@@ -201,12 +198,8 @@ const AddQuestions = () => {
     }
   }, [saveSuccess, saveError, dispatch, navigate, testId]);
 
-  if (loading && !currentTest) {
-    return (
-      <Box display="flex" justifyContent="center" mt={4}>
-        <CircularProgress />
-      </Box>
-    );
+  if (loading || (testId && !currentTest)) {
+    return <Loader />;
   }
 
   return (

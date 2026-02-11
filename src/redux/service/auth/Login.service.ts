@@ -1,7 +1,7 @@
 import apiClient from "../../apiClient";
 import axios from "axios";
 
-// Payload interface for login
+
 export interface LoginPayload {
   userId: string;
   password?: string;

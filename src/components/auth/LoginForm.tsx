@@ -51,18 +51,16 @@ const LoginForm = () => {
     dispatch(login(data));
   };
 
-  // Handle successful login navigation
   useEffect(() => {
     if (success && isAuthenticated) {
       toast.success("Login Successful!", {
-        toastId: "login-success", // Prevent duplicate toasts
+        toastId: "login-success",
       });
       dispatch(resetLoginState());
       navigate("/dashboard");
     }
   }, [success, isAuthenticated, navigate, dispatch]);
 
-  // Handle errors - just clear them, toast is already shown by apiClient
   useEffect(() => {
     if (error) {
       dispatch(clearAuthError());
@@ -71,7 +69,6 @@ const LoginForm = () => {
 
   return (
     <Box>
-      {/* Logo */}
       <Box mb={3}>
         <Box
           component="img"

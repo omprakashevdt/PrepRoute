@@ -14,9 +14,10 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import type { Test } from "../../redux/service/test/Test.service";
 
 interface TestHeaderDetailsProps {
-  currentTest: any;
+  currentTest: Test | null;
   onEdit?: () => void;
 }
 
@@ -26,7 +27,6 @@ const TestHeaderDetails = ({ currentTest, onEdit }: TestHeaderDetailsProps) => {
       elevation={0}
       sx={{ p: 3, mb: 3, border: "1px solid #e0e0e0", borderRadius: 3 }}
     >
-      {/* Header Row 1: Type Badge, Modifier Toggle, Edit */}
       <Stack
         direction="row"
         justifyContent="space-between"
@@ -36,7 +36,7 @@ const TestHeaderDetails = ({ currentTest, onEdit }: TestHeaderDetailsProps) => {
         <Chip
           label={currentTest?.type || "Chapter Wise"}
           sx={{
-            bgcolor: "#1a237e", // Deep Blue
+            bgcolor: "#1a237e",
             color: "#fff",
             fontWeight: "bold",
             textTransform: "capitalize",
@@ -54,12 +54,11 @@ const TestHeaderDetails = ({ currentTest, onEdit }: TestHeaderDetailsProps) => {
         </Stack>
       </Stack>
 
-      {/* Header Row 2: Title and Difficulty */}
       <Stack direction="row" alignItems="center" spacing={2} mb={3}>
         <Stack direction="row" alignItems="center" spacing={1}>
           <Box
             component="img"
-            src="https://cdn-icons-png.flaticon.com/512/2232/2232688.png" // Placeholder icon
+            src="https://cdn-icons-png.flaticon.com/512/2232/2232688.png"
             alt="icon"
             sx={{ width: 28, height: 28 }}
           />
@@ -86,7 +85,6 @@ const TestHeaderDetails = ({ currentTest, onEdit }: TestHeaderDetailsProps) => {
         />
       </Stack>
 
-      {/* Header Row 3: Meta Data grid */}
       <Grid container spacing={2} alignItems="center">
         <Grid size={{ xs: 12, md: 8 }}>
           <Stack spacing={1.5}>
@@ -112,10 +110,14 @@ const TestHeaderDetails = ({ currentTest, onEdit }: TestHeaderDetailsProps) => {
               </Typography>
               <Stack direction="row" spacing={1}>
                 {currentTest?.topics?.length ? (
-                  currentTest.topics.map((t: string | any, i: number) => (
+                  currentTest.topics.map((t, i) => (
                     <Chip
                       key={i}
-                      label={typeof t === "string" ? t : t?.name || "Topic"}
+                      label={
+                        typeof t === "string"
+                          ? t
+                          : (t as { name: string })?.name || "Topic"
+                      }
                       size="small"
                       variant="outlined"
                       sx={{
@@ -141,10 +143,14 @@ const TestHeaderDetails = ({ currentTest, onEdit }: TestHeaderDetailsProps) => {
               </Typography>
               <Stack direction="row" spacing={1}>
                 {currentTest?.sub_topics?.length ? (
-                  currentTest.sub_topics.map((t: string | any, i: number) => (
+                  currentTest.sub_topics.map((t, i) => (
                     <Chip
                       key={i}
-                      label={typeof t === "string" ? t : t?.name || "SubTopic"}
+                      label={
+                        typeof t === "string"
+                          ? t
+                          : (t as { name: string })?.name || "SubTopic"
+                      }
                       size="small"
                       variant="outlined"
                       sx={{

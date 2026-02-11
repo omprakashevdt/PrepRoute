@@ -1,5 +1,5 @@
 import { Box, CircularProgress } from "@mui/material";
-// Image in public folder should be referenced by absolute path
+    
 const logoImg = "/preproute lofo.png";
 
 const Loader = () => {

@@ -17,10 +17,31 @@ export interface CreateTestPayload {
   status: string | null;
 }
 
+export interface Test {
+  id: string;
+  name: string;
+  type: string;
+  subject: string;
+  topics: string[];
+  sub_topics: string[];
+  correct_marks: number;
+  wrong_marks: number;
+  unattempt_marks: number;
+  difficulty: "easy" | "medium" | "hard";
+  total_time: number;
+  total_questions: number;
+  total_marks: number;
+  status: string;
+  scheduled_date?: string | null;
+  expiry_date?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface CreateTestResponse {
   status: string;
   message: string;
-  data: unknown;
+  data: Test;
 }
 
 const extractServerMessage = (error: unknown): string => {
@@ -53,7 +74,7 @@ export interface Question {
   option4: string;
   correct_option: string;
   explanation?: string;
-  difficulty?: string;
+  difficulty?: "easy" | "medium" | "hard";
   test_id: string;
   topic_id?: string;
   sub_topic_id?: string;
@@ -82,9 +103,8 @@ export interface GetAllTestsParams {
 
 export const getAllTests = async (
   params?: GetAllTestsParams,
-): Promise<unknown> => {
+): Promise<{ data: Test[] }> => {
   try {
-    // Filter out empty, null, or undefined parameters
     const cleanParams: Record<string, string> = {};
     if (params) {
       Object.keys(params).forEach((key) => {
@@ -95,7 +115,6 @@ export const getAllTests = async (
       });
     }
 
-    // Only pass params if there are actual values
     const config =
       Object.keys(cleanParams).length > 0 ? { params: cleanParams } : {};
     const response = await apiClient.get("/tests", config);
@@ -105,7 +124,7 @@ export const getAllTests = async (
   }
 };
 
-export const getTestById = async (id: string): Promise<unknown> => {
+export const getTestById = async (id: string): Promise<{ data: Test }> => {
   try {
     const response = await apiClient.get(`/tests/${id}`);
     return response.data;
@@ -113,7 +132,6 @@ export const getTestById = async (id: string): Promise<unknown> => {
     throw new Error(extractServerMessage(error));
   }
 };
-
 
 export interface UpdateTestPayload {
   name?: string;
@@ -136,7 +154,7 @@ export interface UpdateTestPayload {
 export const updateTest = async (
   id: string,
   payload: UpdateTestPayload,
-): Promise<{ success: boolean; data: unknown; message: string }> => {
+): Promise<{ success: boolean; data: Test; message: string }> => {
   try {
     const response = await apiClient.put(`/tests/${id}`, payload);
     return response.data;
