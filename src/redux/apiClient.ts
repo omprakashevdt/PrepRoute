@@ -2,9 +2,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.DEV
-    ? import.meta.env.VITE_URL
-    : "https://admin-moderator-backend-production.up.railway.app/api",
+  baseURL: import.meta.env.VITE_URL,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
