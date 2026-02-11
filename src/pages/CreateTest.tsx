@@ -26,9 +26,15 @@ import {
   fetchSubTopics,
   clearSubTopics,
 } from "../redux/slice/topic/topicSlice";
-import { createNewTest, resetTestState } from "../redux/slice/test/testSlice";
+import type { Topic, SubTopic } from "../redux/service/topic/Topic.service";
+import {
+  createNewTest,
+  resetTestState,
+  fetchTestById,
+  updateTestAsync,
+} from "../redux/slice/test/testSlice";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import CustomButton from "../components/common/CustomButton";
 import { colors } from "../theme/colors";
 
@@ -50,6 +56,9 @@ type FormValues = {
 const CreateTest: FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { testId } = useParams<{ testId?: string }>();
+  const isEditMode = Boolean(testId);
+
   const { subjects, loading: subjectsLoading } = useAppSelector(
     (state) => state.subject,
   );
@@ -57,6 +66,8 @@ const CreateTest: FC = () => {
     loading: testLoading,
     success,
     error,
+    createdTestId,
+    currentTest,
   } = useAppSelector((state) => state.test);
   const { topics, subTopics, loadingTopics, loadingSubTopics } = useAppSelector(
     (state) => state.topic,
@@ -92,18 +103,105 @@ const CreateTest: FC = () => {
   const selectedSubject = watch("subject");
   const selectedTopics = watch("topics");
 
-  useEffect(() => {
-    dispatch(fetchSubjects());
-  }, [dispatch]);
+  // Track if form was submitted in this session
+  const [formSubmitted, setFormSubmitted] = useState(false);
 
   useEffect(() => {
-    if (selectedSubject) {
+    // Don't reset test state in edit mode
+    if (!isEditMode) {
+      dispatch(resetTestState());
+    }
+    dispatch(fetchSubjects());
+    // Reset form submission flag
+    setFormSubmitted(false);
+  }, [dispatch, isEditMode]);
+
+  // Fetch test data if in edit mode
+  useEffect(() => {
+    if (isEditMode && testId) {
+      dispatch(fetchTestById(testId));
+    }
+  }, [dispatch, isEditMode, testId]);
+
+  // Populate form when test data is loaded in edit mode
+  useEffect(() => {
+    if (isEditMode && currentTest && subjects.length > 0) {
+      // Find subject ID from name
+      const subjectObj = subjects.find(
+        (s) => s.name === currentTest.subject || s.id === currentTest.subject,
+      );
+      const subjectId = subjectObj?.id || currentTest.subject;
+
+      // Set basic fields
+      setValue("name", currentTest.name || "");
+      setValue(
+        "type",
+        currentTest.type === "chapterwise" ? "chapter_wise" : currentTest.type,
+      );
+      setValue("subject", subjectId);
+      setValue("correct_marks", currentTest.correct_marks || "");
+      setValue("wrong_marks", currentTest.wrong_marks || "");
+      setValue("unattempt_marks", currentTest.unattempt_marks || "");
+      setValue("difficulty", currentTest.difficulty || "");
+      setValue("total_time", currentTest.total_time || "");
+      setValue("no_of_questions", currentTest.total_questions || "");
+      setValue("total_marks", currentTest.total_marks || "");
+
+      // Fetch topics for the subject, then set topics and fetch subtopics
+      if (subjectId) {
+        dispatch(fetchTopics(subjectId)).then((action) => {
+          if (
+            action.payload &&
+            currentTest.topics &&
+            Array.isArray(currentTest.topics)
+          ) {
+            // Backend returns topic NAMES, but we need topic IDs for the form
+            const fetchedTopics = action.payload as Topic[];
+            const topicIds = currentTest.topics
+              .map((topicName) => {
+                const found = fetchedTopics.find((t) => t.name === topicName);
+                return found?.id;
+              })
+              .filter((id): id is string => id !== undefined);
+
+            setValue("topics", topicIds);
+
+            if (topicIds.length > 0) {
+              dispatch(fetchSubTopics(topicIds)).then((subAction) => {
+                if (
+                  subAction.payload &&
+                  currentTest.sub_topics &&
+                  Array.isArray(currentTest.sub_topics)
+                ) {
+                  // Backend returns sub-topic NAMES, but we need sub-topic IDs
+                  const fetchedSubTopics = subAction.payload as SubTopic[];
+                  const subTopicIds = currentTest.sub_topics
+                    .map((subTopicName) => {
+                      const found = fetchedSubTopics.find(
+                        (st) => st.name === subTopicName,
+                      );
+                      return found?.id;
+                    })
+                    .filter((id): id is string => id !== undefined);
+
+                  setValue("sub_topics", subTopicIds);
+                }
+              });
+            }
+          }
+        });
+      }
+    }
+  }, [isEditMode, currentTest, subjects, setValue, dispatch]);
+
+  useEffect(() => {
+    if (selectedSubject && !isEditMode) {
       dispatch(fetchTopics(selectedSubject));
       setValue("topics", []);
       setValue("sub_topics", []);
       dispatch(clearSubTopics());
     }
-  }, [selectedSubject, dispatch, setValue]);
+  }, [selectedSubject, dispatch, setValue, isEditMode]);
 
   useEffect(() => {
     if (selectedTopics && selectedTopics.length > 0) {
@@ -116,17 +214,55 @@ const CreateTest: FC = () => {
   }, [selectedTopics, dispatch, setValue]);
 
   useEffect(() => {
-    if (success) {
-     toast.success("Test created successfully!");
-      dispatch(resetTestState());
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 2000);
+    // Only process success if form was actually submitted in this session
+    if (!formSubmitted) {
+      return;
     }
+
+    if (success && (createdTestId || isEditMode)) {
+      if (isEditMode && testId) {
+        // Edit mode success
+        toast.success("Test updated successfully!");
+        setTimeout(() => {
+          navigate(`/create-test/${testId}/publish`);
+          dispatch(resetTestState());
+          setFormSubmitted(false);
+        }, 1000);
+      } else if (createdTestId) {
+        // Create mode success
+        const message =
+          submissionType === "draft"
+            ? "Test draft saved!"
+            : "Test created successfully!";
+        toast.success(message);
+
+        setTimeout(() => {
+          if (submissionType === "draft") {
+            navigate("/dashboard");
+          } else {
+            navigate(`/create-test/${createdTestId}/questions`);
+          }
+          dispatch(resetTestState());
+          setFormSubmitted(false);
+        }, 1000);
+      }
+    }
+
     if (error) {
       toast.error(error);
+      setFormSubmitted(false);
     }
-  }, [success, error, dispatch, navigate, submissionType]);
+  }, [
+    success,
+    error,
+    dispatch,
+    navigate,
+    createdTestId,
+    formSubmitted,
+    submissionType,
+    isEditMode,
+    testId,
+  ]);
 
   const onSubmit = (data: FormValues) => {
     const { no_of_questions, type, ...restData } = data;
@@ -149,7 +285,16 @@ const CreateTest: FC = () => {
       status: submissionType === "draft" ? "draft" : "unpublished",
     };
 
-    dispatch(createNewTest(apiPayload));
+    // Mark that form was submitted in this session
+    setFormSubmitted(true);
+
+    if (isEditMode && testId) {
+      // Update existing test
+      dispatch(updateTestAsync({ id: testId, payload: apiPayload }));
+    } else {
+      // Create new test
+      dispatch(createNewTest(apiPayload));
+    }
   };
 
   if (subjectsLoading && subjects.length === 0) {
@@ -180,12 +325,14 @@ const CreateTest: FC = () => {
           scrollButtons="auto"
           TabIndicatorProps={{ style: { display: "none" } }}
           sx={{
-            width: "50%",
+            width: { xs: "100%", md: "50%" },
             "& .MuiTab-root": {
               textTransform: "none",
               fontWeight: 500,
               borderRadius: 2,
               color: "text.secondary",
+              minWidth: { xs: "auto", sm: 120 },
+              fontSize: { xs: "0.875rem", sm: "1rem" },
             },
           }}
         >
@@ -357,11 +504,17 @@ const CreateTest: FC = () => {
               <Controller
                 name="sub_topics"
                 control={control}
+                rules={{
+                  validate: (value) =>
+                    (value && value.length > 0) || "Sub-topics are required",
+                }}
                 render={({ field }) => (
                   <TextField
                     {...field}
                     select
                     fullWidth
+                    error={!!errors.sub_topics}
+                    helperText={errors.sub_topics?.message as string}
                     disabled={
                       !selectedTopics ||
                       selectedTopics.length === 0 ||
@@ -510,8 +663,9 @@ const CreateTest: FC = () => {
               <Typography variant="subtitle2" mb={2} fontWeight={600}>
                 Marking Scheme:
               </Typography>
-              <Stack direction="row" spacing={2} justifyContent="space-between">
-                <Box>
+              <Grid container spacing={2}>
+                {/* Wrong Answer */}
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Typography
                     variant="caption"
                     display="block"
@@ -523,7 +677,19 @@ const CreateTest: FC = () => {
                   <Controller
                     name="wrong_marks"
                     control={control}
-                    rules={{ required: "Wrong marks are required" }}
+                    rules={{
+                      required: "Wrong marks are required",
+                      validate: (value) => {
+                        const numValue = Number(value);
+                        if (isNaN(numValue)) {
+                          return "Please enter a valid number";
+                        }
+                        if (numValue >= 0) {
+                          return "Wrong marks must be negative";
+                        }
+                        return true;
+                      },
+                    }}
                     render={({ field }) => (
                       <TextField
                         {...field}
@@ -540,15 +706,22 @@ const CreateTest: FC = () => {
                         }}
                         onChange={(e) => {
                           const val = e.target.value;
-                          if (/^[-]?\d*\.?\d*$/.test(val)) {
+                          // Only allow negative numbers (must start with -)
+                          if (
+                            val === "" ||
+                            val === "-" ||
+                            /^-\d*\.?\d*$/.test(val)
+                          ) {
                             field.onChange(val);
                           }
                         }}
                       />
                     )}
                   />
-                </Box>
-                <Box>
+                </Grid>
+
+                {/* Unattempted */}
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Typography
                     variant="caption"
                     display="block"
@@ -571,7 +744,6 @@ const CreateTest: FC = () => {
                         error={!!errors.unattempt_marks}
                         helperText={errors.unattempt_marks?.message}
                         sx={{
-                          minWidth: "80px",
                           "& .MuiOutlinedInput-root": {
                             borderRadius: 2,
                           },
@@ -585,8 +757,10 @@ const CreateTest: FC = () => {
                       />
                     )}
                   />
-                </Box>
-                <Box>
+                </Grid>
+
+                {/* Correct Answer */}
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Typography
                     variant="caption"
                     display="block"
@@ -609,7 +783,6 @@ const CreateTest: FC = () => {
                         error={!!errors.correct_marks}
                         helperText={errors.correct_marks?.message}
                         sx={{
-                          minWidth: "80px",
                           "& .MuiOutlinedInput-root": {
                             borderRadius: 2,
                           },
@@ -623,8 +796,10 @@ const CreateTest: FC = () => {
                       />
                     )}
                   />
-                </Box>
-                <Box>
+                </Grid>
+
+                {/* No of Questions */}
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Typography
                     variant="caption"
                     display="block"
@@ -660,8 +835,10 @@ const CreateTest: FC = () => {
                       />
                     )}
                   />
-                </Box>
-                <Box>
+                </Grid>
+
+                {/* Total Marks */}
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Typography
                     variant="caption"
                     display="block"
@@ -697,8 +874,8 @@ const CreateTest: FC = () => {
                       />
                     )}
                   />
-                </Box>
-              </Stack>
+                </Grid>
+              </Grid>
             </Grid>
             {/* buttons */}
             <Grid
@@ -721,6 +898,27 @@ const CreateTest: FC = () => {
                 }}
               />
 
+              {/* Save as Draft */}
+              <CustomButton
+                variant="outlined"
+                label="Save as Draft"
+                loading={testLoading && submissionType === "draft"}
+                loadingText="Saving..."
+                onClick={() => {
+                  setSubmissionType("draft");
+                  handleSubmit(onSubmit)();
+                }}
+                sx={{
+                  width: 160,
+                  borderColor: colors.primary.main,
+                  color: colors.primary.main,
+                  "&:hover": {
+                    borderColor: colors.primary.dark,
+                    backgroundColor: "rgba(25, 118, 210, 0.04)",
+                  },
+                }}
+              />
+
               {/* Next */}
               <CustomButton
                 sx={{
@@ -733,7 +931,7 @@ const CreateTest: FC = () => {
                 }}
                 variant="contained"
                 label="Next"
-                loading={testLoading}
+                loading={testLoading && submissionType === "publish"}
                 loadingText="Processing..."
                 onClick={() => {
                   setSubmissionType("publish");

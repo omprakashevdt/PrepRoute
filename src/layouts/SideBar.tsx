@@ -16,7 +16,7 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useLocation, useNavigate } from "react-router-dom";
-import{colors} from "../theme/colors"
+import { colors } from "../theme/colors";
 
 const drawerWidth = 260;
 const collapsedWidth = 80;
@@ -48,7 +48,7 @@ const Sidebar = ({
   const location = useLocation();
   const navigate = useNavigate();
 
-  const content = (
+  const content = (isMobile?: boolean) => (
     <Box>
       {/* Header */}
       <Box
@@ -64,9 +64,12 @@ const Sidebar = ({
           </Typography>
         )}
 
-        <IconButton onClick={onCollapseToggle}>
-          {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-        </IconButton>
+        {/* Only show collapse toggle on desktop */}
+        {!isMobile && (
+          <IconButton onClick={onCollapseToggle}>
+            {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+          </IconButton>
+        )}
       </Box>
 
       {/* Menu */}
@@ -135,7 +138,7 @@ const Sidebar = ({
           },
         }}
       >
-        {content}
+        {content(false)}
       </Drawer>
 
       {/* Mobile */}
@@ -151,7 +154,7 @@ const Sidebar = ({
           },
         }}
       >
-        {content}
+        {content(true)}
       </Drawer>
     </>
   );

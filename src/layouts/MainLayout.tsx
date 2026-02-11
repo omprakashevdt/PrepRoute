@@ -37,11 +37,15 @@ const MainLayout = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: { xs: 0, md: 3 },
+          width: { xs: "100%", md: "auto" },
           ml: {
+            xs: 0,
             md: collapsed ? `${collapsedWidth}px` : `${drawerWidth}px`,
           },
           transition: "margin 0.3s ease",
+          maxWidth: "100vw",
+          overflowX: "hidden",
         }}
       >
         <Toolbar />

@@ -12,6 +12,8 @@ const Login = lazy(() => import("../pages/Login"));
 const NotFound = lazy(() => import("../pages/NotFound"));
 const Dashboard = lazy(() => import("../pages/Dashboard"));
 const CreateTest = lazy(() => import("../pages/CreateTest"));
+const AddQuestions = lazy(() => import("../pages/AddQuestions"));
+const TestPublish = lazy(() => import("../pages/TestPublish"));
 
 const AppRoutes = () => {
   return (
@@ -30,6 +32,18 @@ const AppRoutes = () => {
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/create-test" element={<CreateTest />} />
+              <Route
+                path="/create-test/:testId/edit"
+                element={<CreateTest />}
+              />
+              <Route
+                path="/create-test/:testId/questions"
+                element={<AddQuestions />}
+              />
+              <Route
+                path="/create-test/:testId/publish"
+                element={<TestPublish />}
+              />
             </Route>
           </Route>
 
